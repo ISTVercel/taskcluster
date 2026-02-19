@@ -110,6 +110,12 @@ func unzip(b []byte, dest string) error {
 			}
 		}()
 
+		// Basic validation of the archive entry name to prevent Zip Slip
+		// Disallow absolute paths and any use of ".." that could escape dest.
+		if filepath.IsAbs(f.Name) || strings.Contains(f.Name, "..") {
+			return fmt.Errorf("illegal file path in zip: %s", f.Name)
+		}
+
 		path := filepath.Join(dest, f.Name)
 
 		// Prevent Zip Slip: ensure the resulting path is within dest
