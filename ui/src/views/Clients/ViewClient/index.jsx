@@ -190,8 +190,20 @@ export default class ViewClient extends Component {
   // This tool is not intended for other uses
   // than setting up credentials via `taskcluster signin`,
   // which uses this URL format.
-  isAllowedCallback = callbackUrl =>
-    /^https?:\/\/localhost(:[0-9]+)?(\/|$)/.test(callbackUrl);
+  isAllowedCallback = callbackUrl => {
+    try {
+      const url = new URL(callbackUrl);
+
+      if ((url.protocol === 'http:' || url.protocol === 'https:') && url.hostname === 'localhost') {
+        return true;
+      }
+
+      return false;
+    } catch (e) {
+      // Invalid URL
+      return false;
+    }
+  };
 
   handleSaveClient = async (client, clientId) => {
     const { isNewClient } = this.props;
@@ -225,9 +237,14 @@ export default class ViewClient extends Component {
 
       // CLI login
       if (callbackUrl) {
-        window.location.replace(
-          `${callbackUrl}?clientId=${clientId}&accessToken=${result.data.createClient.accessToken}`
+        const redirectUrl = new URL(callbackUrl);
+        redirectUrl.searchParams.set('clientId', clientId);
+        redirectUrl.searchParams.set(
+          'accessToken',
+          result.data.createClient.accessToken
         );
+        window.location.replace(redirectUrl.toString());
+
 
         return;
       }
